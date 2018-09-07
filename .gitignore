@@ -1,5 +1,14 @@
-node_modules
+# OS X files
+.DS_Store
+Thumbs.db
+
+# Generated files
 npm-debug.log
+yarn-error.log
+node_modules/
+build/
+coverage/
+
+# Intellij project files
 .idea
-src/*.js
-src/*.map
+*.iml

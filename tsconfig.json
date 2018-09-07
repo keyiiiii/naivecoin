@@ -1,18 +1,15 @@
 {
   "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
     "module": "commonjs",
-    "target": "ES2015",
-    "sourceMap": true
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "removeComments": true,
+    "target": "ESNext"
   },
-  "include": [
-    "src/main.ts",
-    "src/block.ts",
-    "src/p2p.ts",
-    "src/util.ts",
-    "src/transaction.ts",
-    "src/wallet.ts",
-    "src/transactionPool.ts"
-  ],
+  "compileOnSave": false,
   "exclude": [
     "node_modules"
   ]
