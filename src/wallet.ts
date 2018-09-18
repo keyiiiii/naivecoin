@@ -51,9 +51,13 @@ const deleteWallet = () => {
   }
 };
 
-const getBalance = (address: string, unspentTxOuts: UnspentTxOut[]): number => {
+const getBalance = (
+  address: string,
+  unspentTxOuts: UnspentTxOut[],
+  assetId: string,
+): number => {
   return _(findUnspentTxOuts(address, unspentTxOuts))
-    .map((uTxO: UnspentTxOut) => uTxO.amount)
+    .map((uTxO: UnspentTxOut) => (uTxO.assetId === assetId ? uTxO.amount : 0))
     .sum();
 };
 

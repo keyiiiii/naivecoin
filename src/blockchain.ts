@@ -52,12 +52,10 @@ class Block {
 }
 
 const genesisTransaction = {
-  txIns: [
-    { signature: '', txHash: '', txOutIndex: 0, assetId: MINING.ASSET_ID },
-  ],
+  txIns: [{ signature: '', txHash: '', txOutIndex: 0, assetId: 'genesis' }],
   txOuts: [
     {
-      assetId: MINING.ASSET_ID,
+      assetId: 'genesis',
       address: GENESIS.ADDRESS,
       amount: MINING.COINBASE_AMOUNT,
     },
@@ -226,8 +224,8 @@ const findBlock = (
   }
 };
 
-const getAccountBalance = (): number => {
-  return getBalance(getPublicFromWallet(), getUnspentTxOuts());
+const getAccountBalance = (assetId: string): number => {
+  return getBalance(getPublicFromWallet(), getUnspentTxOuts(), assetId);
 };
 
 const sendTransaction = (
