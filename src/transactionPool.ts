@@ -29,7 +29,7 @@ const addToTransactionPool = (
 
 const hasTxIn = (txIn: TxIn, unspentTxOuts: UnspentTxOut[]): boolean => {
   const foundTxIn = unspentTxOuts.find((uTxO: UnspentTxOut) => {
-    return uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex;
+    return uTxO.txHash === txIn.txHash && uTxO.txOutIndex === txIn.txOutIndex;
   });
   return foundTxIn !== undefined;
 };
@@ -70,7 +70,7 @@ const isValidTxForPool = (
     return _.find(txPoolIns, (txPoolIn: TxIn) => {
       return (
         txIn.txOutIndex === txPoolIn.txOutIndex &&
-        txIn.txOutId === txPoolIn.txOutId
+        txIn.txHash === txPoolIn.txHash
       );
     });
   };

@@ -98,8 +98,9 @@ const initHttpServer = (myHttpPort: number) => {
   app.post('/mineTransaction', (req: Request, res: Response) => {
     const address = req.body.address;
     const amount = req.body.amount;
+    const assetId = req.body.assetId;
     try {
-      const resp = generatenextBlockWithTransaction(address, amount);
+      const resp = generatenextBlockWithTransaction(address, amount, assetId);
       res.send(resp);
     } catch (e) {
       console.log(e.message);
@@ -111,11 +112,12 @@ const initHttpServer = (myHttpPort: number) => {
     try {
       const address = req.body.address;
       const amount = req.body.amount;
+      const assetId = req.body.assetId;
 
       if (address === undefined || amount === undefined) {
         throw Error('invalid address or amount');
       }
-      const resp = sendTransaction(address, amount);
+      const resp = sendTransaction(address, amount, assetId);
       res.send(resp);
     } catch (e) {
       console.log(e.message);

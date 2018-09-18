@@ -21,6 +21,7 @@ import {
   getPrivateFromWallet,
   getPublicFromWallet,
 } from './wallet';
+import { GENESIS, MINING } from './constant';
 
 class Block {
   public index: number;
@@ -51,15 +52,17 @@ class Block {
 }
 
 const genesisTransaction = {
-  txIns: [{ signature: '', txOutId: '', txOutIndex: 0 }],
+  txIns: [
+    { signature: '', txHash: '', txOutIndex: 0, assetId: MINING.ASSET_ID },
+  ],
   txOuts: [
     {
-      address:
-        '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
-      amount: 50,
+      assetId: MINING.ASSET_ID,
+      address: GENESIS.ADDRESS,
+      amount: MINING.COINBASE_AMOUNT,
     },
   ],
-  id: 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3',
+  id: GENESIS.ID,
 };
 
 const genesisBlock: Block = new Block(
@@ -167,6 +170,7 @@ const generateNextBlock = () => {
 const generatenextBlockWithTransaction = (
   receiverAddress: string,
   amount: number,
+  assetId: string,
 ) => {
   if (!isValidAddress(receiverAddress)) {
     throw Error('invalid address');
@@ -181,6 +185,7 @@ const generatenextBlockWithTransaction = (
   const tx: Transaction = createTransaction(
     receiverAddress,
     amount,
+    assetId,
     getPrivateFromWallet(),
     getUnspentTxOuts(),
     getTransactionPool(),
@@ -225,10 +230,15 @@ const getAccountBalance = (): number => {
   return getBalance(getPublicFromWallet(), getUnspentTxOuts());
 };
 
-const sendTransaction = (address: string, amount: number): Transaction => {
+const sendTransaction = (
+  address: string,
+  amount: number,
+  assetId: string,
+): Transaction => {
   const tx: Transaction = createTransaction(
     address,
     amount,
+    assetId,
     getPrivateFromWallet(),
     getUnspentTxOuts(),
     getTransactionPool(),

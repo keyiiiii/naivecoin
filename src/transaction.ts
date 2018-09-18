@@ -1,43 +1,48 @@
 import CryptoJS from 'crypto-js';
 import ecdsa from 'elliptic';
 import _ from 'lodash';
+import { MINING } from './constant';
 
 const ec = new ecdsa.ec('secp256k1');
 
-const COINBASE_AMOUNT: number = 50;
-
 class UnspentTxOut {
-  public readonly txOutId: string;
+  public readonly txHash: string;
   public readonly txOutIndex: number;
   public readonly address: string;
   public readonly amount: number;
+  public readonly assetId: string;
 
   constructor(
-    txOutId: string,
+    txHash: string,
     txOutIndex: number,
     address: string,
     amount: number,
+    assetId: string,
   ) {
-    this.txOutId = txOutId;
+    this.txHash = txHash;
     this.txOutIndex = txOutIndex;
     this.address = address;
     this.amount = amount;
+    this.assetId = assetId;
   }
 }
 
 class TxIn {
-  public txOutId: string;
+  public txHash: string;
   public txOutIndex: number;
   public signature: string;
+  public assetId: string;
 }
 
 class TxOut {
   public address: string;
   public amount: number;
+  public assetId: string;
 
-  constructor(address: string, amount: number) {
+  constructor(address: string, amount: number, assetId: string) {
     this.address = address;
     this.amount = amount;
+    this.assetId = assetId;
   }
 }
 
@@ -50,7 +55,7 @@ class Transaction {
 
 const getTransactionId = (transaction: Transaction): string => {
   const txInContent: string = transaction.txIns
-    .map((txIn: TxIn) => txIn.txOutId + txIn.txOutIndex)
+    .map((txIn: TxIn) => txIn.txHash + txIn.txOutIndex)
     .reduce((a, b) => a + b, '');
 
   const txOutContent: string = transaction.txOuts
@@ -130,7 +135,7 @@ const validateBlockTransactions = (
 const hasDuplicates = (txIns: TxIn[]): boolean => {
   const groups = _.countBy(
     txIns,
-    (txIn: TxIn) => txIn.txOutId + txIn.txOutIndex,
+    (txIn: TxIn) => txIn.txHash + txIn.txOutIndex,
   );
   return _(groups)
     .map((value, key) => {
@@ -170,7 +175,7 @@ const validateCoinbaseTx = (
     console.log('invalid number of txOuts in coinbase transaction');
     return false;
   }
-  if (transaction.txOuts[0].amount !== COINBASE_AMOUNT) {
+  if (transaction.txOuts[0].amount !== MINING.COINBASE_AMOUNT) {
     console.log('invalid coinbase amount in coinbase transaction');
     return false;
   }
@@ -184,7 +189,7 @@ const validateTxIn = (
 ): boolean => {
   const referencedUTxOut: UnspentTxOut = aUnspentTxOuts.find(
     (uTxO: UnspentTxOut) =>
-      uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex,
+      uTxO.txHash === txIn.txHash && uTxO.txOutIndex === txIn.txOutIndex,
   );
   if (referencedUTxOut === null) {
     console.log('referenced txOut not found: ' + JSON.stringify(txIn));
@@ -207,7 +212,7 @@ const validateTxIn = (
 };
 
 const getTxInAmount = (txIn: TxIn, aUnspentTxOuts: UnspentTxOut[]): number => {
-  return findUnspentTxOut(txIn.txOutId, txIn.txOutIndex, aUnspentTxOuts).amount;
+  return findUnspentTxOut(txIn.txHash, txIn.txOutIndex, aUnspentTxOuts).amount;
 };
 
 const findUnspentTxOut = (
@@ -217,7 +222,7 @@ const findUnspentTxOut = (
 ): UnspentTxOut => {
   return aUnspentTxOuts.find(
     (uTxO: UnspentTxOut) =>
-      uTxO.txOutId === transactionId && uTxO.txOutIndex === index,
+      uTxO.txHash === transactionId && uTxO.txOutIndex === index,
   );
 };
 
@@ -228,11 +233,12 @@ const getCoinbaseTransaction = (
   const t = new Transaction();
   const txIn: TxIn = new TxIn();
   txIn.signature = '';
-  txIn.txOutId = '';
+  txIn.txHash = '';
   txIn.txOutIndex = blockIndex;
+  txIn.assetId = MINING.ASSET_ID;
 
   t.txIns = [txIn];
-  t.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
+  t.txOuts = [new TxOut(address, MINING.COINBASE_AMOUNT, MINING.ASSET_ID)];
   t.id = getTransactionId(t);
   return t;
 };
@@ -247,7 +253,7 @@ const signTxIn = (
 
   const dataToSign = transaction.id;
   const referencedUnspentTxOut: UnspentTxOut = findUnspentTxOut(
-    txIn.txOutId,
+    txIn.txHash,
     txIn.txOutIndex,
     aUnspentTxOuts,
   );
@@ -276,7 +282,13 @@ const updateUnspentTxOuts = (
     .map((t: Transaction) => {
       return t.txOuts.map(
         (txOut, index) =>
-          new UnspentTxOut(t.id, index, txOut.address, txOut.amount),
+          new UnspentTxOut(
+            t.id,
+            index,
+            txOut.address,
+            txOut.amount,
+            txOut.assetId,
+          ),
       );
     })
     .reduce((a, b) => a.concat(b), []);
@@ -285,17 +297,16 @@ const updateUnspentTxOuts = (
     .map((t: Transaction) => t.txIns)
     .reduce((a, b) => a.concat(b), [])
     .map(
-      (txIn: TxIn) => new UnspentTxOut(txIn.txOutId, txIn.txOutIndex, '', 0),
+      (txIn: TxIn) =>
+        new UnspentTxOut(txIn.txHash, txIn.txOutIndex, '', 0, txIn.assetId),
     );
 
-  const resultingUnspentTxOuts = aUnspentTxOuts
+  return aUnspentTxOuts
     .filter(
       (uTxO: UnspentTxOut) =>
-        !findUnspentTxOut(uTxO.txOutId, uTxO.txOutIndex, consumedTxOuts),
+        !findUnspentTxOut(uTxO.txHash, uTxO.txOutIndex, consumedTxOuts),
     )
     .concat(newUnspentTxOuts);
-
-  return resultingUnspentTxOuts;
 };
 
 const processTransactions = (
@@ -332,8 +343,8 @@ const isValidTxInStructure = (txIn: TxIn): boolean => {
   } else if (typeof txIn.signature !== 'string') {
     console.log('invalid signature type in txIn');
     return false;
-  } else if (typeof txIn.txOutId !== 'string') {
-    console.log('invalid txOutId type in txIn');
+  } else if (typeof txIn.txHash !== 'string') {
+    console.log('invalid txHash type in txIn');
     return false;
   } else if (typeof txIn.txOutIndex !== 'number') {
     console.log('invalid txOutIndex type in txIn');

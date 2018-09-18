@@ -95,13 +95,14 @@ const createTxOuts = (
   receiverAddress: string,
   myAddress: string,
   amount,
+  assetId: string,
   leftOverAmount: number,
 ) => {
-  const txOut1: TxOut = new TxOut(receiverAddress, amount);
+  const txOut1: TxOut = new TxOut(receiverAddress, amount, assetId);
   if (leftOverAmount === 0) {
     return [txOut1];
   } else {
-    const leftOverTx = new TxOut(myAddress, leftOverAmount);
+    const leftOverTx = new TxOut(myAddress, leftOverAmount, assetId);
     return [txOut1, leftOverTx];
   }
 };
@@ -119,7 +120,7 @@ const filterTxPoolTxs = (
     const txIn = _.find(txIns, (aTxIn: TxIn) => {
       return (
         aTxIn.txOutIndex === unspentTxOut.txOutIndex &&
-        aTxIn.txOutId === unspentTxOut.txOutId
+        aTxIn.txHash === unspentTxOut.txHash
       );
     });
 
@@ -135,6 +136,7 @@ const filterTxPoolTxs = (
 const createTransaction = (
   receiverAddress: string,
   amount: number,
+  assetId: string,
   privateKey: string,
   unspentTxOuts: UnspentTxOut[],
   txPool: Transaction[],
@@ -155,7 +157,7 @@ const createTransaction = (
 
   const toUnsignedTxIn = (unspentTxOut: UnspentTxOut) => {
     const txIn: TxIn = new TxIn();
-    txIn.txOutId = unspentTxOut.txOutId;
+    txIn.txHash = unspentTxOut.txHash;
     txIn.txOutIndex = unspentTxOut.txOutIndex;
     return txIn;
   };
@@ -164,7 +166,13 @@ const createTransaction = (
 
   const tx: Transaction = new Transaction();
   tx.txIns = unsignedTxIns;
-  tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
+  tx.txOuts = createTxOuts(
+    receiverAddress,
+    myAddress,
+    amount,
+    assetId,
+    leftOverAmount,
+  );
   tx.id = getTransactionId(tx);
 
   tx.txIns = tx.txIns.map((txIn: TxIn, index: number) => {
