@@ -181,6 +181,7 @@ const createTransaction = (
 
   tx.txIns = tx.txIns.map((txIn: TxIn, index: number) => {
     txIn.signature = signTxIn(tx, index, privateKey, unspentTxOuts);
+    txIn.assetId = assetId;
     return txIn;
   });
 
